@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+    <script type="text/babel" >
+        "use strict";
+		let socket;
+		
+		const user = `user${(Math.floor((Math.random()*1000))+1)}`;
+		console.log("user: " + user);
+		
+		let draws = {};
+		
+		let canvas,ctx;
+		let sendBufferCanvas, sendBufferCtx;
+		let dragging = false;
+		
+		const init = () =>{
+			canvas = document.querySelector('#mainCanvas');
+			ctx = canvas.getContext('2d');
+			ctx.lineWidth = 3;
+			ctx.strokeStyle = "red";
+			
+			socket = io.connect();
+			setupSocket();
+			setup();
+			
+			socket.on('connect', () => {
+				
+				socket.emit('join', 'room1');
+			});
+			
+			canvas.onmousedown = doMousedown;
+			canvas.onmousemove = doMousemove;
+			canvas.onmouseup = doMouseup;
+			canvas.onmouseout = doMouseout;
+		}
+		
+		const setupSocket = () => {
+			console.log("setup");
+			
+			socket.on('update', (data) =>{
+				console.log(data);
+				
+				handleMessage(data);
+			});
+			
+		}
+		
+		const setup = () => {
+		
+			sendBufferCanvas = document.querySelector('#mainCanvas');
+			sendBufferCanvas.height = 1000;
+			sendBufferCanvas.width = 1000;
+			sendBufferCtx = canvas.getContext('2d');
+			
+			//ctx.fillRect(100, 100, 200, 200);
+			
+			//sendBufferCtx.fillRect(0,0,200,200);
+			
+			const data = {
+				x: 0, 
+				y: 0,
+				height: 500, 
+				width: 700, 
+				imgData: canvas.toDataURL()
+			};
+			
+			socket.emit("draw", data);
+		}
+		
+		const handleMessage = (data) => {
+			let image = new Image();
+			
+			image.onload = () => {
+				console.log("onload");
+				ctx.save();
+				ctx.globalCompositeOperation = "source-over";
+				ctx.drawImage(image, data.x, data.y, data.width, data.height);
+				ctx.restore();
+			};
+			console.log("Handle Message: " + data.imgData);
+			
+			image.src = data.imgData;
+		}
+		
+		function click(e){
+			dragging = true;
+			var mouse = getMouse(e);
+			ctx.beginPath();
+			ctx.moveTo(mouse.x,mouse.y);
+		}
+		
+		function getMouse(e){
+			var mouse = {}
+			mouse.x = e.pageX - e.target.offsetLeft;
+			mouse.y = e.pageY - e.target.offsetTop;
+			return mouse;
+		}
+		setInterval( () => {
+			const data = {
+				x: 0, 
+				y: 0,
+				height: 500, 
+				width: 700, 
+				imgData: canvas.toDataURL()
+			};
+			
+			socket.emit("draw", data);
+		}, 3000);
+		window.onload = init;
+    </script>
+</head>
+<body>
+<canvas id="mainCanvas" width="700" height="700">Get a real browser!</canvas>
+<h2>Click to Draw!</h2>
+</body>
+</html>

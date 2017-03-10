@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+	<!--<script src="/socket.io/socket.io.js"></script>-->
+    <style>
+        canvas{
+            position: absolute;
+            left: 0px;
+            top: 0px;
+        }
+        #mainCanvas{
+            z-index: 0;
+        }
+        #topCanvas{
+            z-index: 1;
+        }
+    </style>
+    <script type="text/babel" >
+        "use strict";
+		let socket;
+
+        let canvas,ctx, canvas2, ctx2;
+		
+        //var active;
+        var playerTurn;
+        playerTurn = true;//test
+        var boardSpace = 300;
+        var subBoardSpace = 100;
+        
+        //sets up all boards and subboards
+        /*var subBoardX = [3];
+        var subBoardY = [subBoardX, subBoardX, subBoardX];
+        var boardX = [subBoardY, subBoardY, subBoardY];
+        var boardY = [boardX, boardX, boardX];*/
+        var topBoardVic = [9];
+        var midBoardVic = [9];
+        var topBoard = [9];
+
+        //store which map you are on in the overmap (5 is the default overmap)
+        var overX = 5;
+        var overY = 5;
+
+        //which suboard is active
+        var activeX;
+        var activeY;
+        
+        var regular = false;
+
+        var xImage = new Image(100,100);
+        xImage.src = "../media/xImage.png";
+        var oImage = new Image(100,100);
+        oImage.src = "../media/oImage.png";
+
+		const init = () =>{
+			canvas = document.querySelector('#mainCanvas');
+			ctx = canvas.getContext('2d');
+			ctx.lineWidth = 3;
+			ctx.strokeStyle = "black";
+            
+            canvas2 = document.querySelector('#topCanvas');
+            ctx2 = canvas2.getContext('2d');
+			
+			//socket = io.connect();
+			//setupSocket();
+			setup(regular);
+			
+			/*socket.on('connect', () => {
+				
+				socket.emit('join', 'room1');
+			});
+			
+			canvas.onmousedown = doMousedown;
+			canvas.onmousemove = doMousemove;
+			canvas.onmouseup = doMouseup;
+			canvas.onmouseout = doMouseout;*/
+            canvas2.onmouseup = click;
+		}
+        
+        const setupSocket = () => {
+			console.log("setup");
+			
+			socket.on('update', (data) =>{
+				console.log(data);
+				
+				handleMessage(data);
+			});
+			
+		}
+        
+        const setup = (reg) =>{
+            
+            activeX = 8;
+            activeY = 8;
+            for(var i = 0; i < 9; i++){
+                topBoard[i] = [9];
+                topBoardVic[i] = 0;
+                midBoardVic[i] = 0;
+            }
+            for(var i = 0; i < 9; i++){
+                for(var j = 0; j < 9; j++){
+                    topBoard[i][j] = [9];
+                }
+            }
+            for(var i = 0; i < 9; i++){
+                for(var j = 0; j < 9; j++){
+                    for(var k = 0; k < 9; k++){
+                        topBoard[i][j][k] = 0;
+                    }
+                }
+            }
+            console.log("board: "+topBoard[0][0][0]);
+            
+            for(var i = 0; i <= 2; i++){
+                for(var j = 0; j <= 2; j++){
+                    if(reg){
+                        for(var k = 1; k <= 2; k++){
+                                for(var l = 1; l <= 2; l++){
+                                    ctx.lineWidth = 1;
+                                    ctx.strokeStyle = "blue";
+                                    ctx.beginPath();
+                                    ctx.moveTo(k * subBoardSpace + i * boardSpace, 0);
+                                    ctx.lineTo(k * subBoardSpace + i * boardSpace, 900);
+                                    ctx.stroke();
+                                    ctx.moveTo(0, l * subBoardSpace + j * boardSpace);
+                                    ctx.lineTo(900, l * subBoardSpace + j * boardSpace);
+                                    ctx.stroke();
+                                    ctx.strokeStyle = "black";
+                                }
+                        }
+                    }
+                    if(i > 0 && j > 0){
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(i * boardSpace, 0);
+                        ctx.lineTo(i * boardSpace, 900);
+                        ctx.stroke();
+                        ctx.moveTo(0, j * boardSpace);
+                        ctx.lineTo(900, j * boardSpace);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        const deactivate = () =>{
+            ctx2.clearRect(0,0,900,900);
+            
+            ctx2.globalAlpha = 0.5;
+            ctx2.fillRect(0,0,900,900);
+            ctx2.globalAlpha = 1.0;
+            for(var i = 0; i < 3; i++){
+                for(var j = 0; j < 3; j++){
+                    if(i == activeX && j == activeY){
+                        ctx2.clearRect(i*boardSpace, j*boardSpace,300,300);
+                        console.log("deactivated places: "+i+", "+j);
+                        console.log("deactivated positions: "+i*boardSpace+", "+j*boardSpace);
+                    /*if(i != activeX && j != activeY){
+                        console.log("deactivated places: "+i+", "+j);
+                        console.log("deactivated positions: "+i*boardSpace+", "+j*boardSpace);
+                        ctx2.globalAlpha = 0.5;
+                        ctx2.fillRect(i*boardSpace, j*boardSpace, i*boardSpace + boardSpace, j*boardSpace + boardSpace);
+                        ctx2.globalAlpha = 1.0;*/
+                    }
+                }
+            }
+        }
+        
+        const winCheck = (check) =>{
+            var victory = false;
+            if(check[0] == check[1] == check[2] != 0){
+                victory = true
+            }
+            if(check[3] == check[4] == check[5] != 0){
+                victory = true
+            }
+            if(check[6] == check[7] == check[8] != 0){
+                victory = true
+            }
+            if(check[0] == check[3] == check[6] != 0){
+                victory = true
+            }
+            if(check[1] == check[4] == check[7] != 0){
+                victory = true
+            }
+            if(check[2] == check[5] == check[8] != 0){
+                victory = true
+            }
+            if(check[0] == check[4] == check[8] != 0){
+                victory = true
+            }
+            if(check[2] == check[4] == check[6] != 0){
+                victory = true
+            }
+            
+            return victory;
+        }
+        
+        function click(e){
+            console.log("click");
+			var mouse = getMouse(e);
+			place(mouse.x,mouse.y);
+		}
+        function getMouse(e){
+			var mouse = {}
+			mouse.x = e.pageX - e.target.offsetLeft;
+			mouse.y = e.pageY - e.target.offsetTop;
+			return mouse;
+		}
+        
+        const place = (x, y) =>{
+            
+            /*for(var i = 0; i < 9; i++){
+                for(var j = 0; j < 9; j++){
+                    for(var k = 0; k < 9; k++){
+                        console.log("topboard["+i+"]["+j+"]["+k+"] = "+topBoard[i][j][k]);
+                    }
+                }
+            }*/
+            
+            var regX = Math.floor(x/boardSpace);
+            var regY = Math.floor(y/boardSpace);
+            
+            var subX = Math.floor(x/subBoardSpace);
+            var subY = Math.floor(y/subBoardSpace);
+            
+            console.log("sub X+Y: " + subX * subBoardSpace + ", " + subY * subBoardSpace);
+            
+            //test REMOVE LATER
+            if(activeX == 8){
+                activeX = regX;
+                activeY = regY;
+            }
+            
+            if(regular){
+                if((regX >= activeX && regX <= activeX * boardSpace) && (regY >= activeY && regY <= activeY * boardSpace)){
+                    //place mark on board
+                    var placeX = subX - regX * 3;
+                    var placeY = subY - regY * 3;
+                    console.log("X: "+placeX + " Y: " + placeY)
+                    var overboardPos = 0;
+                    var boardPos = 0;
+                    var subBoardPos = 0;
+                    if(playerTurn){
+                        subBoardPos = placeY * 3 + placeX;
+                        boardPos = regY * 3 + regX;
+                        overboardPos = overY * 3 + overX;
+                        console.log("board: " + boardPos + " subBoard: " + subBoardPos);
+                        if(topBoard[overboardPos][boardPos][subBoardPos] == 0){
+                            ctx.drawImage(xImage, subX * subBoardSpace, subY * subBoardSpace);
+                            activeX = placeX;
+                            activeY = placeY;
+                            topBoard[overboardPos][boardPos][subBoardPos] = 1;
+                            playerTurn = false;
+                            deactivate();
+                            console.log("win?: " + winCheck(topBoard[overboardPos][boardPos][subBoardPos]));
+                            if(winCheck(topBoard[overboardPos][boardPos][subBoardPos])){
+                                console.log("X victory");
+                                midBoardVic[boardPos] = 1;
+                                if(winCheck(midBoardVic)){
+                                    //go back to main board
+                                }
+                            }
+                        }
+                    }
+                    else{
+                        subBoardPos = placeY * 3 + placeX;
+                        boardPos = regY * 3 + regX;
+                        overboardPos = overY * 3 + overX;
+                        console.log("board: " + boardPos + " subBoard: " + subBoardPos);
+                        if(topBoard[overboardPos][boardPos][subBoardPos] == 0){
+                            ctx.drawImage(oImage, subX * subBoardSpace, subY * subBoardSpace);
+                            activeX = placeX;
+                            activeY = placeY;
+                            topBoard[overboardPos][boardPos][subBoardPos] = 2;
+                            playerTurn = true;
+                            deactivate();
+                            console.log("win?: " + winCheck(topBoard[overboardPos][boardPos][subBoardPos]));
+                            if(winCheck(topBoard[overboardPos][boardPos][subBoardPos])){
+                                console.log("X victory");
+                                midBoardVic[boardPos] = 1;
+                                if(winCheck(midBoardVic)){
+                                    //go back to main board
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            else{
+                overX = regX;
+                overY = regY;
+                console.log("X: "+overX + " Y: " + overY)
+                regular = true;
+                setup(regular);
+            }
+        }
+        
+		window.onload = init;
+    </script>
+</head>
+<body>
+<canvas id="mainCanvas" width="900" height="900">Get a real browser!</canvas>
+<canvas id="topCanvas" width="900" height="900">Get a real browser!</canvas>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{ 
+  "extends": "airbnb/base",
+  "rules": {
+    "no-underscore-dangle" : "off",
+	"indent" : "off",
+	"no-trailing-spaces" : "off",
+	"no-tabs" : "off",
+	"padded-blocks" : "off",
+	"object-curly-spacing" : "off",
+	"linebreak-style" : "off"
+  }
+}

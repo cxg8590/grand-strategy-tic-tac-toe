@@ -1,0 +1,20 @@
+{
+  "name": "part4",
+  "version": "1.0.0",
+  "description": "part 4 of hw",
+  "main": "index.js",
+  "scripts": {
+    "test": "eslint ./src",
+    "start": "node ./src/server.js"
+  },
+  "author": "Chris Granville",
+  "license": "ISC",
+  "dependencies": {
+    "socket.io": "^1.4.8"
+  },
+  "devDependencies": {
+    "eslint": "^3.5.0",
+    "eslint-config-airbnb": "^11.1.0",
+    "eslint-plugin-import": "^1.15.0"
+  }
+}
