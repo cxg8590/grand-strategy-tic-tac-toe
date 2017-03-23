@@ -18,6 +18,8 @@ console.log(`Listening on 127.0.0.1: ${port}`);
 
 const io = socketio(app);
 
+var room = "room1";
+
 const onJoined = (sock) => {
 	const socket = sock;
 	
@@ -30,14 +32,14 @@ const onDrw = (sock) => {
 	const socket = sock;
 	
 	socket.on('draw', (data) => {
-		io.sockets.in('room1').emit('update', data);
+		io.sockets.in(room).emit('update', data);
 	});
 };
 
 const onDisconnect = (sock) => {
 	const socket = sock;
 	socket.on('disconnect', () => {
-		socket.leave('room1');
+		socket.leave(room);
 	});
 };
 
