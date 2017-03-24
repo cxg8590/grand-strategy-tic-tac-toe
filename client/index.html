@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
-	<!--<script src="/socket.io/socket.io.js"></script>-->
+	<script src="/socket.io/socket.io.js"></script>
     <style>
+        body{
+            background-image: url( "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/bg.png");
+            background-size: cover;
+        }
         canvas{
             position: absolute;
             left: 0px;
@@ -11,9 +15,40 @@
         }
         #mainCanvas{
             z-index: 0;
+            left:30%;
+            top:5%;
+            padding-bottom: 200px;
         }
         #topCanvas{
             z-index: 1;
+            left:30%;
+            top: 5%;
+        }
+        #waitBox{
+            background-color: #cdc37e;
+            padding-top: 15px;
+            padding-right: 20px;
+            padding-bottom: 15px;
+            padding-left: 20px;
+            left:46%;
+            top:45%;
+            position: absolute;
+            border-style: double;
+        }
+        #roomBox{
+            background-color: #cdc37e;
+            padding: 10px;
+            left:45%;
+            top:45%;
+            position: absolute;
+            border-style: double;
+        }
+        img{
+            padding-left: 37%;
+            padding-top: 8%;
+        }
+        .hidden{
+            display: none;
         }
     </style>
     <script type="text/babel" >
@@ -24,8 +59,10 @@
 		
         //var active;
         var playerTurn;
-        playerTurn = true;//test
         var playerX = true;
+        var playerSetup = true;
+        var first = true;
+
         var boardSpace = 300;
         var subBoardSpace = 100;
         
@@ -49,20 +86,22 @@
         var regular = false;
 
         var xImage = new Image(100,100);
-        xImage.src = "../media/xImage.png";
+        xImage.src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/xImage.png";
         var oImage = new Image(100,100);
-        oImage.src = "../media/oImage.png";
-        var map = new Image(900,900);
-        map.src = "../media/map.png";
+        oImage.src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/oImage.png";
         var mapBoard = [];
         for(var i = 0; i < 9; i++){
             mapBoard[i] = new Image(900,900);
             var num = i + 1;
-            mapBoard[i].src = "../media/map" + num + ".png";
-            console.log("mapBoard src: " + mapBoard[i].src);
+            mapBoard[i].src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/map" + num + ".png";
         }
         mapBoard[9] = new Image(900,900);
-        mapBoard[9].src = "../media/map.png";
+        mapBoard[9].src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/map.png";
+
+        //html
+        var roomBox;
+        var waitBox;
+        var banner;
 
 		const init = () =>{
 			canvas = document.querySelector('#mainCanvas');
@@ -72,6 +111,11 @@
             
             canvas2 = document.querySelector('#topCanvas');
             ctx2 = canvas2.getContext('2d');
+            
+            waitBox = document.querySelector('#waitBox');
+            roomBox = document.querySelector('#roomBox');
+            
+            banner = document.querySelector('#banner');
 			
             activeX = 8;
             activeY = 8;
@@ -93,13 +137,12 @@
                 }
             }
             
-			//socket = io.connect();
 			//setupSocket();
             
             const connect = document.querySelector("#connect");
-            connect.addEventListener('click', connectSocket);
+            connect.addEventListener('click', setupSocket);
             
-			setup(regular);
+			//setup(regular);
 			
 			/*socket.on('connect', () => {
 				
@@ -114,23 +157,88 @@
 		}
         
         const setupSocket = () => {
-			console.log("setup");
+            
+            socket = io.connect();
+            
+            var room = document.querySelector("#roomName").value;
 			
-			socket.on('update', (data) =>{
-				console.log(data);
+            socket.on('connect', () => {
 				
-				handleMessage(data);
+				socket.emit('join', room);
+			});
+            
+            socket.on('areYouX', (data) => {
+                if(playerSetup){
+                    playerX = data;
+                    playerTurn = data;
+                    roomBox.classList.add("hidden");
+                    if(data){
+                        waitBox.classList.remove("hidden");
+                    }
+                    console.log("are you X: " + data);
+                    playerSetup = false;
+                }
+                if(!data){                    
+                    setup(regular);
+                }
+            });
+            
+            socket.on('board', (data) =>{
+				
+                overX = data.x;
+                overY = data.y;
+                
+                if(first){
+                    if(playerX) playerTurn = true;
+                    first = false;
+                }
+                
+				regular = true;
+                setup(regular);
+			});
+            
+            
+			socket.on('Turn', (data) =>{
+                console.log("playerX: " + playerX + " playerTurn: " + playerTurn + " players turn: " + data.turn);
+                
+				if(playerX && data.turn == 1){
+                    //playerTurn = true;
+                    place(data.x, data.y);
+                }
+                else if(!playerX && data.turn == 2){
+                    //playerTurn = true;
+                    place(data.x, data.y);
+                }
+                //else{  playerTurn = false;  }
+                if((playerX && data.turn == 2)||(!playerX && data.turn == 1)){
+                    console.log("recording opponent move");
+                    
+                }
+                console.log("playerX: " + playerX + " playerTurn: " + playerTurn + " players turn: " + data.turn);
+                //place(data.x, data.y);
 			});
 			
 		}
         
         const setup = (reg) =>{
-            /*canvas.width = 900;
-            canvas2.width = 900;*/
+            waitBox.classList.add("hidden");
+            banner.classList.add("hidden");
+            canvas.width = 900;
+            ctx = canvas.getContext('2d');
+			ctx.lineWidth = 3;
+			ctx.strokeStyle = "black";
+            
+            ctx2 = canvas2.getContext('2d');
+            canvas2.width = 900;
             console.log("board: "+topBoard[0][0][0]);
             var mapNum =  overX + overY*3;
             console.log("mapNum: " + mapNum);
             ctx.drawImage(mapBoard[mapNum], 0, 0, 900, 900);
+            
+            for(var i = 0; i < 9; i++){
+                midBoardVic[i] = 0;
+            }
+            
             for(var i = 0; i <= 2; i++){
                 for(var j = 0; j <= 2; j++){
                     if(reg){
@@ -163,7 +271,6 @@
                     
                     if(!reg){
                         var num = i + j*3;
-                        console.log("Vic "+ num + ": " + topBoardVic[num]);
                         if(topBoardVic[num] != 0){
                             if(topBoardVic[num] == 1){
                                 ctx.drawImage(xImage, i * boardSpace, j * boardSpace, boardSpace, boardSpace);
@@ -191,37 +298,28 @@
             ctx2.fillRect(0,0,900,900);
             ctx2.globalAlpha = 1.0;
             
-            var blankSpaces = 0;
+            /*var blankSpaces = 0;
             for(var i = 0; i < 9; i++){
                 if(topBoard[overboardPos][boardPos][i] == 0) blankSpaces++;
-                //console.log("board position "+i+": "+topBoard[overboardPos][boardPos][i]);
-            }
+            }*/
             
-            if(topBoard[overboardPos][boardPos][9] == 1){
-                console.log("full");
+            console.log("mid board victory: "+midBoardVic[boardPos] + "position: " + boardPos);
+            if(midBoardVic[boardPos] != 0){
                 ctx2.clearRect(0,0,900,900);
                 activeX = 8;
                 activeY = 8;
             }
             
-            if(blankSpaces == 0){
+            /*if(blankSpaces == 0){
                 console.log("full");
                 topBoard[overboardPos][boardPos][9] = 1;
-            }
+            }*/
             
             //else{
                 for(var i = 0; i < 3; i++){
                     for(var j = 0; j < 3; j++){
                         if(i == activeX && j == activeY){
                             ctx2.clearRect(i*boardSpace, j*boardSpace,300,300);
-                            console.log("deactivated places: "+i+", "+j);
-                            console.log("deactivated positions: "+i*boardSpace+", "+j*boardSpace);
-                        /*if(i != activeX && j != activeY){
-                            console.log("deactivated places: "+i+", "+j);
-                            console.log("deactivated positions: "+i*boardSpace+", "+j*boardSpace);
-                            ctx2.globalAlpha = 0.5;
-                            ctx2.fillRect(i*boardSpace, j*boardSpace, i*boardSpace + boardSpace, j*boardSpace + boardSpace);
-                            ctx2.globalAlpha = 1.0;*/
                         }
                     }
                 }
@@ -232,11 +330,7 @@
         const winCheck = (check) =>{
             var victory = false;
             
-            if(1 == 1 == 1 != 0)console.log("A = A");
-            if(0 == 1 == 1 != 1)console.log("A = B");
-            
             for(var i = 0; i < 9; i++){
-                console.log("board position "+i+": "+check[i]);
             }
             if((check[0] == check[1]) && (check[0] == check[2]) && (check[0] != 0)){
                 victory = true
@@ -267,8 +361,8 @@
         }
         
         function click(e){
-            console.log("click");
             if(playerTurn){
+                console.log("click + playerTurn: " + playerTurn);
                 var mouse = getMouse(e);
                 place(mouse.x,mouse.y);
             }
@@ -282,21 +376,23 @@
         
         const place = (x, y) =>{
             
+            var turn = 0;
+            
             var regX = Math.floor(x/boardSpace);
             var regY = Math.floor(y/boardSpace);
             
-            var subX = Math.floor(x/subBoardSpace);
-            var subY = Math.floor(y/subBoardSpace);
+            var subX = 0; 
+            var subY = 0;
+            subX = Math.floor(x/subBoardSpace);
+            subY = Math.floor(y/subBoardSpace);
             
-            console.log("sub X+Y: " + subX * subBoardSpace + ", " + subY * subBoardSpace);
-            
-            //test REMOVE LATER
-            if(activeX == 8){
-                activeX = regX;
-                activeY = regY;
-            }
+           
             
             if(regular){
+                if(activeX == 8){
+                    activeX = regX;
+                    activeY = regY;
+                }
                 if((regX >= activeX && regX <= activeX * boardSpace) && (regY >= activeY && regY <= activeY * boardSpace)){
                     //place mark on board
                     var placeX = subX - regX * 3;
@@ -305,98 +401,163 @@
                     var overboardPos = 0;
                     var boardPos = 0;
                     var subBoardPos = 0;
-                    if(playerTurn){
+                    console.log("player turn: "+playerTurn + " playerX: " + playerX);
+                    
+                    
+                    if(playerX == playerTurn){
+                        console.log("Place an X");
                         subBoardPos = placeY * 3 + placeX;
                         boardPos = regY * 3 + regX;
                         overboardPos = overY * 3 + overX;
                         console.log("board: " + boardPos + " subBoard: " + subBoardPos);
+                        console.log("mid board victory: "+midBoardVic[subBoardPos] + "position: " + boardPos);
+                        if(midBoardVic[subBoardPos] != 0){
+                            deactivate(overboardPos, subBoardPos);
+                        }
                         if(topBoard[overboardPos][boardPos][subBoardPos] == 0){
+                            console.log("regular: " + regular);
+                            console.log("subX: " + subX + " subY: " + subY);
                             ctx.drawImage(xImage, subX * subBoardSpace, subY * subBoardSpace);
+                            console.log("X has been placed");
                             activeX = placeX;
                             activeY = placeY;
                             topBoard[overboardPos][boardPos][subBoardPos] = 1;
-                            playerTurn = false;
-                            /*for(var i = 0; i < 9; i++){
-                                console.log("board position "+i+": "+topBoard[overboardPos][boardPos][i]);
-                            }*/
+                            
+                            
+                            
                             var boardPosCheck = activeX + activeY * 3;
-                            deactivate(overboardPos, boardPosCheck);
+                            deactivate(overboardPos, subBoardPos);
                             if(midBoardVic[boardPos] == 0){
-                                console.log("win?: " + winCheck(topBoard[overboardPos][boardPos]));
                                 if(winCheck(topBoard[overboardPos][boardPos])){
-                                    console.log("X victory");
                                     midBoardVic[boardPos] = 1;
                                     ctx.drawImage(xImage, regX * boardSpace, regY * boardSpace, boardSpace, boardSpace);
                                     if(winCheck(midBoardVic)){
-                                        //go back to main board
-                                        console.log("X wins position: " + overboardPos);
+                                        if(winCheck(topBoardVic)){
+                                            ctx.drawImage(oImage, 0, 0, 900, 900);
+                                            return;
+                                        }
                                         topBoardVic[overboardPos] = 1;
+                                        overX = 0;
+                                        overY = 3;
                                         regular = false;
                                         deactivate(overboardPos, boardPosCheck);
+                                        activeX = 8;
+                                        activeY = 8;
                                         setup(regular);
                                     }
                                 }
                             }
+                            
                         }
+                        if(playerTurn){
+                            playerTurn = false;
+                            var loc = {x,y, turn};
+                            loc.x = x;
+                            loc.y = y;
+                            loc.turn = 2;
+                            socket.emit('playerTurn', loc);
+                            //wait();
+                            }
+                        else{playerTurn = true;}
                     }
-                    else{
+                    if(playerX != playerTurn){
                         subBoardPos = placeY * 3 + placeX;
                         boardPos = regY * 3 + regX;
                         overboardPos = overY * 3 + overX;
                         console.log("board: " + boardPos + " subBoard: " + subBoardPos);
+                        console.log("mid board victory: "+midBoardVic[subBoardPos] + "position: " + boardPos);
+                        if(midBoardVic[subBoardPos] != 0){
+                            deactivate(overboardPos, subBoardPos);
+                        }
                         if(topBoard[overboardPos][boardPos][subBoardPos] == 0){
+                            console.log("regular: " + regular);
+                            console.log("subX: " + subX + " subY: " + subY);
                             ctx.drawImage(oImage, subX * subBoardSpace, subY * subBoardSpace);
                             activeX = placeX;
                             activeY = placeY;
                             topBoard[overboardPos][boardPos][subBoardPos] = 2;
-                            playerTurn = true;
-                            /*for(var i = 0; i < 9; i++){
-                                console.log("board position "+i+": "+topBoard[overboardPos][boardPos][i]);
-                            }*/
-                            deactivate(overboardPos, boardPos);
+                            
+                            
+                            deactivate(overboardPos, subBoardPos);
                             if(midBoardVic[boardPos] == 0){
-                                console.log("win?: " + winCheck(topBoard[overboardPos][boardPos]));
                                 if(winCheck(topBoard[overboardPos][boardPos])){
-                                    console.log("Y victory");
                                     midBoardVic[boardPos] = 2;
                                     ctx.drawImage(oImage, regX * boardSpace, regY * boardSpace, boardSpace, boardSpace);
                                     if(winCheck(midBoardVic)){
+                                        if(winCheck(topBoardVic)){
+                                            ctx.drawImage(oImage, 0, 0, 900, 900);
+                                            return;
+                                        }
                                         //go back to main board
-                                        console.log("Y wins position: " + overboardPos);
                                         topBoardVic[overboardPos] = 2;
+                                        overX = 0;
+                                        overY = 3;
                                         regular = false;
                                         deactivate(overboardPos, boardPosCheck);
+                                        activeX = 8;
+                                        activeY = 8;
                                         setup(regular);
                                     }
                                 }
                             }
+                            if(playerTurn){
+                            playerTurn = false;
+                            var loc = {x,y, turn};
+                            loc.x = x;
+                            loc.y = y;
+                            loc.turn = 1;
+                            socket.emit('playerTurn', loc);
+                            console.log("transmiting");
+                            //wait();
+                            }
+                        else{playerTurn = true;}
                         }
+                        
                     }
                 }
+                
             }
             
             else{
-                overX = regX;
-                overY = regY;
-                console.log("X: "+overX + " Y: " + overY);
                 var num = overX + overY * 3;
-                if(topBoardVic[num] == 0){
-                    regular = true;
-                    setup(regular);
+                for(var i = 0; i < 9; i++){
+                    console.log("topBoardVic: i = "+ i + " vic: " + topBoardVic[i]);  
+                }
+                console.log("num: " + topBoardVic[num]);
+                console.log("topBoardVic click: " + num);
+                if(topBoardVic[num] == 0 || topBoardVic[num] == null){
+                    var overNum = {x,y};
+                    overNum.x = regX;
+                    overNum.y = regY;
+                    console.log("OverX: "+overNum.x + " OverY: " + overNum.y);
+                    socket.emit('boardPick', overNum);
                 }
             }
         }
+        
+        /*const wait = () =>{
+            console.log("Hold your dang horses");
+            playerTurn = false;
+        }*/
         
 		window.onload = init;
 
     </script>
 </head>
 <body>
-    <label for="room">Room:</label>
-	<input id="roomName" name="room" type="text"/>
-	<input id="connect" type='button' value='connect'/>
-<canvas id="mainCanvas" width="0" height="900">Get a real browser!</canvas>
-<canvas id="topCanvas" width="0" height="900">Get a real browser!</canvas>
+    <div id="box">
+        <img id="banner" src="https://people.rit.edu/cxg8590/realTime/TicTacToe/media/banner.png" height="300" width="600"/>
+        <div id="roomBox">
+            <label for="room">Room:</label>
+	       <input id="roomName" name="room" type="text"/>
+	       <input id="connect" type='button' value='connect'/>
+        </div>
+        <div id="waitBox" class="hidden" >
+            <h3>Waiting for Player 2</h3>
+        </div>
+        <canvas id="mainCanvas" width="0" height="900">Get a real browser!</canvas>
+        <canvas id="topCanvas" width="0" height="900">Get a real browser!</canvas>
+    </div>
 </body>
 </html>
 
