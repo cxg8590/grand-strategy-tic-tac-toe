@@ -4,7 +4,7 @@
   "description": "part 4 of hw",
   "main": "index.js",
   "scripts": {
-    "test": "eslint ./src",
+    "test": "eslint ./src --fix",
     "start": "node ./src/server.js"
   },
   "author": "Chris Granville",
