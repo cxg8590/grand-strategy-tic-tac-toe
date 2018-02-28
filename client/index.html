@@ -5,7 +5,7 @@
 	<script src="/socket.io/socket.io.js"></script>
     <style>
         body{
-            background-image: url( "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/bg.png");
+            background-image: url( "http://chrisg.ismakinggames.com/realTime/TicTacToe/media/bg.png");
             background-size: cover;
         }
         canvas{
@@ -86,17 +86,17 @@
         var regular = false;
 
         var xImage = new Image(100,100);
-        xImage.src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/xImage.png";
+        xImage.src = "http://chrisg.ismakinggames.com/realTime/TicTacToe/media/xImage.png";
         var oImage = new Image(100,100);
-        oImage.src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/oImage.png";
+        oImage.src = "http://chrisg.ismakinggames.com/realTime/TicTacToe/media/oImage.png";
         var mapBoard = [];
         for(var i = 0; i < 9; i++){
             mapBoard[i] = new Image(900,900);
             var num = i + 1;
-            mapBoard[i].src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/map" + num + ".png";
+            mapBoard[i].src = "http://chrisg.ismakinggames.com/realTime/TicTacToe/media/map" + num + ".png";
         }
         mapBoard[9] = new Image(900,900);
-        mapBoard[9].src = "https://people.rit.edu/cxg8590/realTime/TicTacToe/media/map.png";
+        mapBoard[9].src = "http://chrisg.ismakinggames.com/realTime/TicTacToe/media/map.png";
 
         //html
         var roomBox;
@@ -546,7 +546,7 @@
 </head>
 <body>
     <div id="box">
-        <img id="banner" src="https://people.rit.edu/cxg8590/realTime/TicTacToe/media/banner.png" height="300" width="600"/>
+        <img id="banner" src="http://chrisg.ismakinggames.com/realTime/TicTacToe/media/banner.png" height="300" width="600"/>
         <div id="roomBox">
             <label for="room">Room:</label>
 	       <input id="roomName" name="room" type="text"/>
